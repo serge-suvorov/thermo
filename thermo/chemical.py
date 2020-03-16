@@ -977,32 +977,46 @@ class Chemical(object): # pragma: no cover
         except:
             pass
 
-    def calc_H(self, T, P):
+    def calc_H(self, T, P, phase=None):
+        """Calculates enthalpy of chemical, based on refrenced state `H_ref` and phase `phase_ref`
+        Parameters
+        ----------
+        :param T : float
+            temperature, K
+        :param P : float
+            pressure, Pa
+        :param phase : str
+            phase 'g', 'l', or `None`
+            if `None` `self.phase` will be used
+        """
 
+        if phase is None:
+            phase = self.phase
+        
         integrators = {'s': self.HeatCapacitySolid.T_dependent_property_integral,
            'l': self.HeatCapacityLiquid.T_dependent_property_integral,
            'g': self.HeatCapacityGas.T_dependent_property_integral}
         try:
             H = self.H_ref
-            if self.phase == self.phase_ref:
-                H += integrators[self.phase](self.T_ref, T)
+            if phase == self.phase_ref:
+                H += integrators[phase](self.T_ref, T)
 
-            elif self.phase_ref == 's' and self.phase == 'l':
+            elif self.phase_ref == 's' and phase == 'l':
                 H += self.H_int_T_ref_s_to_Tm + self.Hfusm + integrators['l'](self.Tm, T)
 
-            elif self.phase_ref == 'l' and self.phase == 's':
+            elif self.phase_ref == 'l' and phase == 's':
                 H += -self.H_int_l_Tm_to_T_ref_l - self.Hfusm + integrators['s'](self.Tm, T)
 
-            elif self.phase_ref == 'l' and self.phase == 'g':
+            elif self.phase_ref == 'l' and phase == 'g':
                 H += self.H_int_l_T_ref_l_to_Tb + self.Hvap_Tbm + integrators['g'](self.Tb, T)
 
-            elif self.phase_ref == 'g' and self.phase == 'l':
+            elif self.phase_ref == 'g' and phase == 'l':
                 H += -self.H_int_Tb_to_T_ref_g - self.Hvap_Tbm + integrators['l'](self.Tb, T)
 
-            elif self.phase_ref == 's' and self.phase == 'g':
+            elif self.phase_ref == 's' and phase == 'g':
                 H += self.H_int_T_ref_s_to_Tm + self.Hfusm + self.H_int_l_Tm_to_Tb + self.Hvap_Tbm + integrators['g'](self.Tb, T)
 
-            elif self.phase_ref == 'g' and self.phase == 's':
+            elif self.phase_ref == 'g' and phase == 's':
                 H += -self.H_int_Tb_to_T_ref_g - self.Hvap_Tbm - self.H_int_l_Tm_to_Tb - self.Hfusm + integrators['s'](self.Tm, T)
             else:
                 raise Exception('Unknown error')
@@ -1010,75 +1024,84 @@ class Chemical(object): # pragma: no cover
             return None
         return H
 
-    def calc_H_excess(self, T, P):
+    def calc_H_excess(self, T, P, phase=None):
+        if phase is None:
+            phase = self.phase
+        
         H_dep = 0
-        if self.phase_ref == 'g' and self.phase == 'g':
+        if self.phase_ref == 'g' and phase == 'g':
             H_dep += self.eos.to_TP(T, P).H_dep_g - self.H_dep_ref_g
 
-        elif self.phase_ref == 'l' and self.phase == 'l':
+        elif self.phase_ref == 'l' and phase == 'l':
             try:
                 H_dep += self.eos.to_TP(T, P).H_dep_l - self._eos_T_101325.H_dep_l
             except:
                 H_dep += 0
 
-        elif self.phase_ref == 'g' and self.phase == 'l':
+        elif self.phase_ref == 'g' and phase == 'l':
             H_dep += self.H_dep_Tb_Pb_g - self.H_dep_Tb_P_ref_g
             H_dep += (self.eos.to_TP(T, P).H_dep_l - self._eos_T_101325.H_dep_l)
 
-        elif self.phase_ref == 'l' and self.phase == 'g':
+        elif self.phase_ref == 'l' and phase == 'g':
             H_dep += self.H_dep_T_ref_Pb - self.H_dep_ref_l
             H_dep += (self.eos.to_TP(T, P).H_dep_g - self.H_dep_Tb_Pb_g)
         return H_dep
 
-    def calc_S_excess(self, T, P):
+    def calc_S_excess(self, T, P, phase=None):
+        if phase is None:
+            phase = self.phase
+        
         S_dep = 0
-        if self.phase_ref == 'g' and self.phase == 'g':
+        if self.phase_ref == 'g' and phase == 'g':
             S_dep += self.eos.to_TP(T, P).S_dep_g - self.S_dep_ref_g
 
-        elif self.phase_ref == 'l' and self.phase == 'l':
+        elif self.phase_ref == 'l' and phase == 'l':
             try:
                 S_dep += self.eos.to_TP(T, P).S_dep_l - self._eos_T_101325.S_dep_l
             except:
                 S_dep += 0
 
-        elif self.phase_ref == 'g' and self.phase == 'l':
+        elif self.phase_ref == 'g' and phase == 'l':
             S_dep += self.S_dep_Tb_Pb_g - self.S_dep_Tb_P_ref_g
             S_dep += (self.eos.to_TP(T, P).S_dep_l - self._eos_T_101325.S_dep_l)
 
-        elif self.phase_ref == 'l' and self.phase == 'g':
+        elif self.phase_ref == 'l' and phase == 'g':
             S_dep += self.S_dep_T_ref_Pb - self.S_dep_ref_l
             S_dep += (self.eos.to_TP(T, P).S_dep_g - self.S_dep_Tb_Pb_g)
         return S_dep
 
-    def calc_S(self, T, P):
+    def calc_S(self, T, P, phase=None):
 
+        if phase is None:
+            phase = self.phase
+        
         integrators_T = {'s': self.HeatCapacitySolid.T_dependent_property_integral_over_T,
            'l': self.HeatCapacityLiquid.T_dependent_property_integral_over_T,
            'g': self.HeatCapacityGas.T_dependent_property_integral_over_T}
 
         try:
             S = self.S_ref
-            if self.phase == self.phase_ref:
-                S += integrators_T[self.phase](self.T_ref, T)
-                if self.phase in ['l', 'g']:
+            if phase == self.phase_ref:
+                S += integrators_T[phase](self.T_ref, T)
+                if phase in ['l', 'g']:
                     S += -R*log(P/self.P_ref)
 
-            elif self.phase_ref == 's' and self.phase == 'l':
+            elif self.phase_ref == 's' and phase == 'l':
                 S += self.S_int_T_ref_s_to_Tm + self.Hfusm/self.Tm + integrators_T['l'](self.Tm, T)
 
-            elif self.phase_ref == 'l' and self.phase == 's':
+            elif self.phase_ref == 'l' and phase == 's':
                 S += - self.S_int_l_Tm_to_T_ref_l - self.Hfusm/self.Tm + integrators_T['s'](self.Tm, T)
 
-            elif self.phase_ref == 'l' and self.phase == 'g':
+            elif self.phase_ref == 'l' and phase == 'g':
                 S += self.S_int_l_T_ref_l_to_Tb + self.Hvap_Tbm/self.Tb + integrators_T['g'](self.Tb, T) -R*log(P/self.P_ref) # TODO add to other states
 
-            elif self.phase_ref == 'g' and self.phase == 'l':
+            elif self.phase_ref == 'g' and phase == 'l':
                 S += - self.S_int_Tb_to_T_ref_g - self.Hvapm/self.Tb + integrators_T['l'](self.Tb, T)
 
-            elif self.phase_ref == 's' and self.phase == 'g':
+            elif self.phase_ref == 's' and phase == 'g':
                 S += self.S_int_T_ref_s_to_Tm + self.Hfusm/self.Tm + self.S_int_l_Tm_to_Tb + self.Hvap_Tbm/self.Tb + integrators_T['g'](self.Tb, T)
 
-            elif self.phase_ref == 'g' and self.phase == 's':
+            elif self.phase_ref == 'g' and phase == 's':
                 S += - self.S_int_Tb_to_T_ref_g - self.Hvap_Tbm/self.Tb - self.S_int_l_Tm_to_Tb - self.Hfusm/self.Tm + integrators_T['s'](self.Tm, T)
             else:
                 raise Exception('Unknown error')
