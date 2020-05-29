@@ -1853,7 +1853,7 @@ class TDependentProperty(object):
 #            return self.plot_T_dependent_property(Tmin=Tmin, Tmax=Tmax, methods=methods, pts=pts, only_valid=only_valid, order=order)
 
     def plot_T_dependent_property(self, Tmin=None, Tmax=None, methods=[],
-                                  pts=50, only_valid=True, order=0):  # pragma: no cover
+                                  pts=50, only_valid=True, order=0, inverseT=False):  # pragma: no cover
         r'''Method to create a plot of the property vs temperature according to
         either a specified list of methods, or user methods (if set), or all
         methods. User-selectable number of points, and temperature range. If
@@ -1911,13 +1911,19 @@ class TDependentProperty(object):
                                 p = self.calculate(T=T, method=method)
                                 if self.test_property_validity(p):
                                     properties.append(p)
-                                    Ts2.append(T)
+                                    if inverseT:
+                                        Ts2.append(1 / T)
+                                    else:
+                                        Ts2.append(T)
                             except:
                                 pass
                     plt.semilogy(Ts2, properties, label=method)
                 else:
                     properties = [self.calculate(T=T, method=method) for T in Ts]
-                    plt.semilogy(Ts, properties, label=method)
+                    if inverseT:
+                        plt.semilogy(1 / Ts, properties, label=method)
+                    else:
+                        plt.semilogy(Ts, properties, label=method)
             plt.ylabel(self.name + ', ' + self.units)
             plt.title(self.name + ' of ' + self.CASRN)
         elif order > 0:
