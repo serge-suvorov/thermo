@@ -629,24 +629,38 @@ class VaporPressure(TDependentProperty):
             Whether or not a method is valid
         '''
         if method == WAGNER_MCGARRY:
+            if self.CASRN not in WagnerMcGarry.index:
+                return False
             if T < self.WAGNER_MCGARRY_Tmin or T > self.WAGNER_MCGARRY_Tc:
                 return False
         elif method == WAGNER_POLING:
+            if self.CASRN not in WagnerPoling.index:
+                return False
             if T < self.WAGNER_POLING_Tmin or T > self.WAGNER_POLING_Tmax:
                 return False
         elif method == ANTOINE_EXTENDED_POLING:
+            if self.CASRN not in AntoineExtended.index:
+                return False
             if T < self.ANTOINE_EXTENDED_POLING_Tmin or T > self.ANTOINE_EXTENDED_POLING_Tmax:
                 return False
         elif method == ANTOINE_POLING:
+            if self.CASRN not in AntoinePoling.index:
+                return False
             if T < self.ANTOINE_POLING_Tmin or T > self.ANTOINE_POLING_Tmax:
                 return False
         elif method == DIPPR_PERRY_8E:
+            if self.CASRN not in Perrys2_8.index:
+                return False
             if T < self.Perrys2_8_Tmin or T > self.Perrys2_8_Tmax:
                 return False
         elif method == VDI_PPDS:
+            if self.CASRN not in VDI_PPDS_3.index:
+                return False
             if T > self.VDI_PPDS_Tc or T < self.VDI_PPDS_Tm:
                 return False
         elif method == COOLPROP:
+            if not has_CoolProp or self.CASRN not in coolprop_dict:
+                return False
             if T < self.CP_f.Tmin or T < self.CP_f.Tt or T > self.CP_f.Tmax or T > self.CP_f.Tc:
                 return False
         elif method in [BOILING_CRITICAL, LEE_KESLER_PSAT, AMBROSE_WALTON, SANJARI, EDALAT, EOS]:
@@ -660,7 +674,7 @@ class VaporPressure(TDependentProperty):
                 if T < Ts[0] or T > Ts[-1]:
                     return False
         else:
-            raise Exception('Method not valid')
+            raise Exception('Method not valid: ' + method)
         return True
 
 
